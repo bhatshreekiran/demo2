@@ -1,1 +1,48 @@
 @import "tailwindcss";
+
+html.high-contrast {
+    background: #000;
+}
+
+html.high-contrast body {
+    background: #000 !important;
+    color: #fff !important;
+}
+
+html.high-contrast header {
+    background: #000 !important;
+    border-bottom: 2px solid #fff;
+}
+
+html.high-contrast a,
+html.high-contrast button {
+    color: #fff !important;
+}
+
+html.high-contrast a:focus,
+html.high-contrast button:focus {
+    outline: 3px solid #ff0 !important;
+    outline-offset: 3px;
+}
+
+html.high-contrast nav,
+html.high-contrast [data-testid="game-card"],
+html.high-contrast [data-testid="about-section"],
+html.high-contrast [data-testid="game-details"] {
+    background: #000 !important;
+    border-color: #fff !important;
+    color: #fff !important;
+}
+
+html.high-contrast [data-testid="game-title"],
+html.high-contrast [data-testid="game-description"],
+html.high-contrast [data-testid="about-section"] p,
+html.high-contrast [data-testid="game-details"] p,
+html.high-contrast [data-testid="game-details"] span {
+    color: #fff !important;
+}
+
+html.high-contrast [data-testid="game-card"] svg,
+html.high-contrast header svg {
+    color: #fff !important;
+}
