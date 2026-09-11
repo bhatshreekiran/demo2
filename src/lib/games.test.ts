@@ -6,6 +6,7 @@ import {
     getAllGames,
     getAllGameIds,
     getGameById,
+    getFilteredGames,
 } from './games';
 
 async function seedGames(db: Database, count: number): Promise<void> {
@@ -62,5 +63,56 @@ describe('games data-access helpers', () => {
     it('returns null for a non-existent game', async () => {
         await seedGames(db, 2);
         expect(await getGameById(db, 99999)).toBeNull();
+    });
+
+    it('filters games by category', async () => {
+        await seedGames(db, 3);
+        const category = await db
+            .select({ id: categories.id })
+            .from(categories)
+            .get();
+
+        const filtered = await getFilteredGames(db, { categoryIds: [category.id] });
+
+        expect(filtered).toHaveLength(3);
+        expect(filtered.map((game) => game.title)).toEqual([
+            'Game 01',
+            'Game 02',
+            'Game 03',
+        ]);
+    });
+
+    it('filters games by publisher and combines category filters', async () => {
+        await seedGames(db, 2);
+        const [secondCategory] = await db
+            .insert(categories)
+            .values({ name: 'Puzzle', description: 'other category' })
+            .returning({ id: categories.id });
+        const [secondPublisher] = await db
+            .insert(publishers)
+            .values({ name: 'Pub Two', description: 'other publisher' })
+            .returning({ id: publishers.id });
+        await db.insert(games).values({
+            title: 'Game 00',
+            description: 'Description 0',
+            starRating: 4.2,
+            categoryId: secondCategory.id,
+            publisherId: secondPublisher.id,
+        });
+
+        const filtered = await getFilteredGames(db, {
+            categoryIds: [secondCategory.id],
+            publisherId: secondPublisher.id,
+        });
+
+        expect(filtered.map((game) => game.title)).toEqual(['Game 00']);
+    });
+
+    it('returns no games when filters have no matches', async () => {
+        await seedGames(db, 2);
+
+        const filtered = await getFilteredGames(db, { publisherId: 99999 });
+
+        expect(filtered).toEqual([]);
     });
 });
