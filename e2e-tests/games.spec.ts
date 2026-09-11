@@ -24,6 +24,53 @@ test.describe('Game Listing and Navigation', () => {
     });
   });
 
+  test('should filter games by multiple categories', async ({ page }) => {
+    await page.goto('/');
+    const categoryFilter = page.getByTestId('category-filter');
+    const categoryValues = await categoryFilter.locator('option').evaluateAll((options) =>
+      options.slice(0, 2).map((option) => (option as HTMLOptionElement).value),
+    );
+
+    await categoryFilter.selectOption(categoryValues);
+
+    await expect(page.getByTestId('filter-status')).toContainText('game');
+    expect(new URL(page.url()).searchParams.get('category')).toBe(categoryValues.join(','));
+  });
+
+  test('should combine category and publisher filters and restore them from the URL', async ({ page }) => {
+    await page.goto('/');
+    const firstCard = page.getByTestId('game-card').first();
+    const categoryId = await firstCard.getAttribute('data-category-id');
+    const publisherId = await firstCard.getAttribute('data-publisher-id');
+
+    await page.getByTestId('category-filter').selectOption(categoryId ?? '');
+    await page.getByTestId('publisher-filter').selectOption(publisherId ?? '');
+
+    await expect(page.getByTestId('game-card').filter({ visible: true })).toHaveCount(1);
+    await expect(page).toHaveURL(new RegExp(`[?&]category=${categoryId}`));
+    await expect(page).toHaveURL(new RegExp(`[?&]publisher=${publisherId}`));
+
+    await page.reload();
+
+    await expect(page.getByTestId('category-filter')).toHaveValues([categoryId ?? '']);
+    await expect(page.getByTestId('publisher-filter')).toHaveValue(publisherId ?? '');
+    await expect(page.getByTestId('game-card').filter({ visible: true })).toHaveCount(1);
+  });
+
+  test('should clear active filters and show all games', async ({ page }) => {
+    await page.goto('/');
+    const categoryFilter = page.getByTestId('category-filter');
+    const initialCount = await page.getByTestId('game-card').count();
+    const categoryValue = await categoryFilter.locator('option').first().getAttribute('value');
+
+    await categoryFilter.selectOption(categoryValue ?? '');
+    await page.getByTestId('clear-filters').click();
+
+    await expect(page).toHaveURL('/');
+    await expect(page.getByTestId('game-card').filter({ visible: true })).toHaveCount(initialCount);
+    await expect(categoryFilter).toHaveValues([]);
+  });
+
   test('should navigate to correct game details page when clicking on a game', async ({ page }) => {
     let gameId: string | null;
     let gameTitle: string | null;
